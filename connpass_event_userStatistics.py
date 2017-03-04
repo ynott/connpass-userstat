@@ -4,44 +4,44 @@
 import csv
 import os,sys
 import pandas as pd
+from functools import reduce
 
-#C:\work\rancherjp.connpass\fulldata\utf8
-path = 'C:/work/rancherjp.connpass/fulldata/utf8/'
+#C:\work\work\connpass-userstat\fulldata\utf8
+path = 'C:/work/connpass-userstat/fulldata/utf8/meetup'
 
-# CSV
-# 0       ,1         ,2     ,3       ,4             ,5             ,6       ,7
-# 参加枠名,ユーザー名,表示名,コメント,参加ステータス,出欠ステータス,更新日時,受付番号
-#                                     参加
-#                                     参加キャンセル
-#                                     補欠
-#          (退会ユーザー)
+EventNo_Name = { 
+  "41997": "もくもく勉強会 #1",
+  "44092": "Meetup Tokyo #2",
+  "46208": "Meetup Tokyo #2懇親会",
+  "45768": "Meetup Tokyo #3",
+  "47871": "もくもく勉強会 #2",
+  "47273": "Meetup Tokyo #4",
+  "50977": "Meetup Tokyo #4懇親会",
+  "49891": "もくもく勉強会 #3",
+  "50984": "もくもく勉強会 #3懇親会",
+  "49614": "Meetup Tokyo #5",
+  "51641": "Meetup Tokyo #5懇親会"
+}
 
 FileList = os.listdir(path)
-
-#EventUsers = collections.defaultdict(int)
-EventUsers = {}
-
-# EventUsers
-#     userid = > 
-#                DisplayName : 
-#                EventNo => status : {1 = "参加",2 = "参加キャンセル",3 = "補欠"}
-#                           update : datetime
-#                           
+Events = []
+results = pd.DataFrame()
 
 
 for FileName in FileList:
     ReadFile = open(FileName, 'r')
     EventNo = FileName.split('_')[1]
     print(EventNo)
-#    EventUsers[EventNo] = {}
-    reader = csv.reader(ReadFile)
-    for row in reader:
-        # print(row)
-        UserID = row[1]
-        print(UserID)
-
-        DisplayName = row[2]
-        print(DisplayName)
-#        EventUsers[UserID][EventNo]["update"] = row[6]
-    
+    dataset1 = pd.read_csv(ReadFile)
+    dataset = dataset1.drop("参加枠名",axis=1).drop("受付番号",axis=1).drop("コメント",axis=1).drop("更新日時",axis=1).drop("出欠ステータス",axis=1)
+    dataset.rename(columns = {'参加ステータス':'%s' % EventNo_Name[EventNo]},inplace = True)
+#    dataset.rename(columns = {'出欠ステータス':'%s' % EventNo_Name[EventNo]},inplace = True)
+    Events.append(dataset)
     ReadFile.close()
+
+
+results = reduce(lambda left,right: pd.merge(left,right,on = ['ユーザー名','表示名'],how='outer'), Events)
+
+print(results)
+
+results.to_csv("events.csv")
